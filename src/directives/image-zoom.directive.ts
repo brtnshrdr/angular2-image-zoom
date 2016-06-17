@@ -1,4 +1,4 @@
-import {Directive, Input, HostListener, HostBinding, ComponentResolver, ComponentFactory, ComponentRef, ViewContainerRef, OnInit, OnDestroy, AfterViewInit, ElementRef} from '@angular/core';
+import {Directive, Input, HostListener, ComponentResolver, ComponentFactory, ComponentRef, ViewContainerRef, OnInit, OnDestroy, AfterViewInit, ElementRef} from '@angular/core';
 import {ImageZoomContainer} from './image-zoom-container.component';
 @Directive({
     selector : '[imageZoom]'
@@ -33,6 +33,8 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit {
     private lastEvent: MouseEvent;
     private previousCursor: string;
 
+    private imageZoomContainerRef: ComponentRef<ImageZoomContainer>;
+
     constructor(private _elementRef: ElementRef, private _componentResolver: ComponentResolver, private _viewContainerRef: ViewContainerRef) {
         if(this._elementRef.nativeElement.nodeName !== 'IMG') {
             console.error('ImageZoom not placed on image element', this._elementRef.nativeElement);
@@ -53,9 +55,9 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit {
 
         this._componentResolver.resolveComponent(ImageZoomContainer)
                 .then((factory: ComponentFactory<ImageZoomContainer>) => {
-                    let container: ComponentRef<ImageZoomContainer> = this._viewContainerRef.createComponent(factory, 0, this._viewContainerRef.injector);
-                    this.imageZoomContainer = container.instance;
-                    return container;
+                    this.imageZoomContainerRef = this._viewContainerRef.createComponent(factory, 0, this._viewContainerRef.injector);
+                    this.imageZoomContainer = this.imageZoomContainerRef.instance;
+                    return this.imageZoomContainerRef;
                 });
     }
 
@@ -109,7 +111,7 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit {
         }
     }
 
-    private ngAfterViewInit() {
+    ngAfterViewInit() {
         this.elementPosX = this.img.x;
         this.elementPosY = this.img.y;
         if(this.lensHeight > this.img.height) {
@@ -120,12 +122,12 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit {
         this.setImageZoomContainer();
     }
 
-    private ngOnInit() {
+    ngOnInit() {
         this.zoomImage.src = this.imageZoom ? this.imageZoom : this.img.src;
     }
 
-    private ngOnDestroy() {
-
+    ngOnDestroy() {
+        this.imageZoomContainerRef.destroy();
     }
 
 }
