@@ -1,39 +1,51 @@
-import {Directive, Input, HostListener, ComponentResolver, ComponentFactory, ComponentRef, ViewContainerRef, OnInit, OnDestroy, AfterViewInit, ElementRef} from '@angular/core';
+import {Directive, Input, HostListener, ComponentResolver, ComponentFactory, ComponentRef, ViewContainerRef, OnInit, OnDestroy, OnChanges, SimpleChanges, AfterViewInit, ElementRef} from '@angular/core';
 import {ImageZoomContainer} from './image-zoom-container.component';
 @Directive({
     selector : '[imageZoom]'
 })
-export class ImageZoom implements OnInit, OnDestroy, AfterViewInit {
+export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
     @Input() private imageZoom: string;
+    @Input() private allowZoom: boolean = true;
+    @Input() private scrollZoom: boolean = true;
     @Input() private lensWidth: number = 300;
     @Input() private lensHeight: number = 300;
+    @Input() private delay: number = 100;
+    @Input() private minZoomLevel: number = .2;
+    @Input() private set maxZoomLevel(maxZoomLevel: number) {
+        this._maxZoomLevel = maxZoomLevel;
+        this._autoCalculateZoom = false;
+    }
+    @Input() private zoomLevelIncrement: number = .1;
 
     public img: HTMLImageElement;
     public imageZoomContainer: ImageZoomContainer;
 
-    public canZoom: boolean = false;
     public isZooming: boolean = false;
     public zoomLevel: number = 1;
 
-    private elementPosX: number;
-    private elementPosY: number;
-    private elementOffsetX: number;
-    private elementOffsetY: number;
+    private _elementPosX: number;
+    private _elementPosY: number;
+    private _elementOffsetX: number;
+    private _elementOffsetY: number;
 
-    private zoomImage: HTMLImageElement = new Image();
-    private zoomedImageWidth: number;
-    private zoomedImageHeight: number;
+    private _zoomImage: HTMLImageElement;
+    private _imageLoaded: boolean = false;
+    private _zoomedImageWidth: number;
+    private _zoomedImageHeight: number;
+    private _maxZoomLevel: number;
+    private _autoCalculateZoom: boolean = true;
 
-    private widthRatio: number;
-    private heightRatio: number;
+    private _widthRatio: number;
+    private _heightRatio: number;
 
-    private currentX: number = 0;
-    private currentY: number = 0;
-    private debounce: number = 0;
-    private lastEvent: MouseEvent;
-    private previousCursor: string;
+    private _currentX: number = 0;
+    private _currentY: number = 0;
+    private _mouseMoveDebounce: number = 0;
+    private _mouseEnterDebounce: number = 0;
+    private _lastEvent: MouseEvent;
+    private _previousCursor: string;
 
-    private imageZoomContainerRef: ComponentRef<ImageZoomContainer>;
+    private _imageZoomContainerRef: ComponentRef<ImageZoomContainer>;
 
     constructor(private _elementRef: ElementRef, private _componentResolver: ComponentResolver, private _viewContainerRef: ViewContainerRef) {
         if(this._elementRef.nativeElement.nodeName !== 'IMG') {
@@ -41,28 +53,38 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit {
             return;
         }
         this.img = this._elementRef.nativeElement;
-
-        this.zoomImage.onload = () => {
-            this.zoomedImageWidth = this.zoomImage.width;
-            this.zoomedImageHeight = this.zoomImage.height;
-            this.widthRatio = this.zoomedImageWidth / this.img.width;
-            this.heightRatio = this.zoomedImageHeight / this.img.height;
-            this.imageZoomContainer.setZoomSize(this.zoomedImageWidth / this.zoomLevel, this.zoomedImageHeight / this.zoomLevel);
-            this.canZoom = true;
-            console.dir(this);
-        };
-
+        this.imageChanged();
 
         this._componentResolver.resolveComponent(ImageZoomContainer)
                 .then((factory: ComponentFactory<ImageZoomContainer>) => {
-                    this.imageZoomContainerRef = this._viewContainerRef.createComponent(factory, 0, this._viewContainerRef.injector);
-                    this.imageZoomContainer = this.imageZoomContainerRef.instance;
-                    return this.imageZoomContainerRef;
+                    this._imageZoomContainerRef = this._viewContainerRef.createComponent(factory, 0, this._viewContainerRef.injector);
+                    this.imageZoomContainer = this._imageZoomContainerRef.instance;
+                    return this._imageZoomContainerRef;
                 });
     }
 
+    private imageChanged() {
+        this._zoomImage = new Image();
+        this._zoomImage.onload = () => {
+            this._zoomedImageWidth = this._zoomImage.width;
+            this._zoomedImageHeight = this._zoomImage.height;
+            this._widthRatio = this._zoomedImageWidth / this.img.width;
+            this._heightRatio = this._zoomedImageHeight / this.img.height;
+            this.imageZoomContainer.setZoomSize(this._zoomedImageWidth / this.zoomLevel, this._zoomedImageHeight / this.zoomLevel);
+            if(this._autoCalculateZoom) {
+                if(this._zoomedImageWidth > this._zoomedImageHeight) {
+                    this._maxZoomLevel = this._zoomedImageHeight / this.lensHeight;
+                } else {
+                    this._maxZoomLevel = this._zoomedImageWidth / this.lensWidth;
+                }
+            }
+            this._imageLoaded = true;
+            this.setImageZoomContainer();
+        };
+    }
+
     private setImageZoomContainer() {
-        this.imageZoomContainer.setOptions(this.lensWidth, this.lensHeight, this.elementPosX + this.img.width + 20, this.elementPosY, this.zoomImage.src);
+        this.imageZoomContainer.setOptions(this.lensWidth, this.lensHeight, this._elementPosX + this.img.width + 20, this._elementPosY, this._zoomImage.src);
     }
 
     private setImageZoomContainerVisiblity(visible: boolean) {
@@ -70,64 +92,121 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit {
     }
 
     private setImageWindowPosition() {
-        let x: number = ((this.currentX - this.elementOffsetX) * this.widthRatio - this.lensWidth / 2) * -1;
-        let y: number = ((this.currentY - this.elementOffsetY) * this.heightRatio - this.lensHeight / 2) * -1;
+        let x: number = ((this._currentX - this._elementOffsetX) * this._widthRatio - this.lensWidth / 2) * -1;
+        let y: number = ((this._currentY - this._elementOffsetY) * this._heightRatio - this.lensHeight / 2) * -1;
         this.imageZoomContainer.setPostion(x, y);
+    }
+
+    private changeZoomLevel() {
+        this._widthRatio = (this._zoomedImageWidth / this.zoomLevel) / this.img.width;
+        this._heightRatio = (this._zoomedImageHeight / this.zoomLevel) / this.img.height;
+        this.imageZoomContainer.setZoomSize(this._zoomedImageWidth / this.zoomLevel, this._zoomedImageHeight / this.zoomLevel);
+        this.setImageWindowPosition();
     }
 
     @HostListener('mousemove', ['$event'])
     private onMousemove(event: MouseEvent) {
-        this.lastEvent = event; // Make sure we end up at the right place, without calling too frequently
-        if(this.debounce !== 0) {
+        this._lastEvent = event; // Make sure we end up at the right place, without calling too frequently
+        if(this._mouseMoveDebounce !== 0) {
             return;
         }
-        this.debounce = setTimeout(() => {
-            this.currentX = this.lastEvent.clientX;
-            this.currentY = this.lastEvent.clientY;
-            this.debounce = 0;
+        this._mouseMoveDebounce = setTimeout(() => {
+            this._currentX = this._lastEvent.clientX;
+            this._currentY = this._lastEvent.clientY;
+            this._mouseMoveDebounce = 0;
             this.setImageWindowPosition();
         }, 10); // Wait 50ms to be more performant
     }
 
     @HostListener('mouseenter', ['$event'])
     private onMouseenter(event: MouseEvent) {
-        if(this.canZoom) {
-            this.isZooming = true;
-            this.previousCursor = this.img.style.cursor;
-            this.img.style.cursor = 'pointer';
-            this.setImageZoomContainerVisiblity(true);
-            console.log('start zooming');
+        if(this._imageLoaded && this.allowZoom) {
+            this._mouseEnterDebounce = setTimeout(() => {
+                this._mouseEnterDebounce = 0;
+                this.isZooming = true;
+                this._previousCursor = this.img.style.cursor;
+                this.img.style.cursor = 'pointer';
+                this.setImageZoomContainerVisiblity(true);
+            }, this.delay);
         }
     }
 
     @HostListener('mouseleave', ['$event'])
     private onMouseleave(event: MouseEvent) {
-        if(this.canZoom) {
+        if(this._mouseEnterDebounce !== 0) {
+            clearTimeout(this._mouseEnterDebounce);
+            return;
+        }
+        if(this.isZooming) {
             this.isZooming = false;
-            this.img.style.cursor = this.previousCursor;
+            this.img.style.cursor = this._previousCursor;
             this.setImageZoomContainerVisiblity(false);
-            console.log('stop zooming');
-            console.dir(this);
+        }
+    }
+
+    @HostListener('MozMousePixelScroll', ['$event'])
+    @HostListener('DOMMouseScroll', ['$event'])
+    @HostListener('mousewheel', ['$event'])
+    private onMouseScroll(event: any) { // MouseWheelEvent is throwing undefined error in SystemJS
+        if(this.scrollZoom) {
+            event.stopImmediatePropagation();
+            event.stopPropagation();
+            event.preventDefault();
+
+            let pos: number = event.wheelDeltaY | event.detail * -1;
+            if(pos > 0) { // Scroll up
+                if(this.zoomLevel > (this.minZoomLevel + this.zoomLevelIncrement)) {
+                    this.zoomLevel -= this.zoomLevelIncrement;
+                    this.changeZoomLevel();
+                }
+            } else { // Scroll down
+                if(this.zoomLevel < (this._maxZoomLevel + this.zoomLevelIncrement)) {
+                    this.zoomLevel += this.zoomLevelIncrement;
+                    this.changeZoomLevel();
+                }
+            }
+
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    ngOnChanges(changeRecord: SimpleChanges) {
+        for (let prop in changeRecord) {
+            if(!changeRecord[prop].isFirstChange()) {
+                if(prop === 'imageZoom') { // Image changed
+                    this.imageChanged();
+                    this.ngAfterViewInit();
+                    this._zoomImage.src = changeRecord[prop].currentValue ? changeRecord[prop].currentValue : this.img.src;
+                } else if(prop === 'lensWidth' || prop === 'lensHeight') {
+                    if(this.lensHeight > this.img.height) {
+                        this.lensHeight = this.img.height;
+                    }
+                    this.setImageZoomContainer();
+                    this.setImageWindowPosition();
+                }
+            }
         }
     }
 
     ngAfterViewInit() {
-        this.elementPosX = this.img.x;
-        this.elementPosY = this.img.y;
+        this._elementPosX = this.img.x;
+        this._elementPosY = this.img.y;
         if(this.lensHeight > this.img.height) {
             this.lensHeight = this.img.height;
         }
-        this.elementOffsetX = this.img.offsetLeft;
-        this.elementOffsetY = this.img.offsetTop;
+        this._elementOffsetX = this.img.offsetLeft;
+        this._elementOffsetY = this.img.offsetTop;
         this.setImageZoomContainer();
     }
 
     ngOnInit() {
-        this.zoomImage.src = this.imageZoom ? this.imageZoom : this.img.src;
+        this._zoomImage.src = this.imageZoom ? this.imageZoom : this.img.src;
     }
 
     ngOnDestroy() {
-        this.imageZoomContainerRef.destroy();
+        this._imageZoomContainerRef.destroy();
     }
 
 }
