@@ -36,6 +36,7 @@ imageZoom | string | null | Link to larger [src] image
 allowZoom | boolean | true | Whether or not zooming is enabled
 clickToZoom | boolean | false | Force a user to click before zooming begins, click again to stop zooming
 scrollZoom | boolean | true | Allow mousewheel to change zoom level
+windowPosition | number | 1 | Position of zoom window. (1-16)
 lensStyle | string | 'WINDOW' | Type of zoom ('LENS', 'WINDOW')
 lensWidth | number | 300 | Width of zoom lens
 lensHeight | number | 300 | Height of zoom lens

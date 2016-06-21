@@ -2,32 +2,30 @@ import {Component, HostListener, ElementRef} from '@angular/core';
 import {ImageZoom} from './image-zoom.directive';
 
 @Component({
-    selector : 'image-zoom-container',
+    selector : 'image-zoom-lens',
     template : ``,
     styles : [`
         :host {
-            position: absolute;
-            text-align: center;
+            float: right;
             overflow: hidden;
-            z-index: 100;
-            float: left;
-            background: rgb(255, 255, 255) no-repeat;
+            z-index: 999;
+            opacity: .4;
+            zoom: 1;
+            cursor: default;
+            border: 1px solid rgb(0, 0, 0);
+            position: absolute;
+            background: rgb(255, 255, 255) no-repeat 0 0;
             pointer-events: none;
         }
     `]
 })
-export class ImageZoomContainer {
+export class ImageZoomLens {
     private visible: boolean;
-    private windowWidth: number;
-    private windowHeight: number;
-    private borderSize: number;
-    private imageHeight: number;
-    private imageWidth: number;
+    private lensWidth: number;
+    private lensHeight: number;
     private top: number;
     private left: number;
-    private positionX: number;
-    private positionY: number;
-    private image: string;
+    private borderSize: number;
 
     private el: HTMLElement;
 
@@ -40,7 +38,15 @@ export class ImageZoomContainer {
 
     @HostListener('mouseleave', ['$event'])
     public onMouseleave(event: MouseEvent) {
-        this.parentImageContainer.onMouseleave(event);
+        let x: number = event.clientX;
+        let y: number = event.clientY;
+        if(x <= this.parentImageContainer.img.x || x >= (this.parentImageContainer.img.x + this.parentImageContainer.img.width)) {
+            this.parentImageContainer.onMouseleave(event);
+        } else if(y <= this.parentImageContainer.img.y || y >= (this.parentImageContainer.img.y + this.parentImageContainer.img.height)){
+            this.parentImageContainer.onMouseleave(event);
+        } else {
+            this.parentImageContainer.onMousemove(event); // "mouseleave" event was just the mouse moving faster than the lens
+        }
     }
 
     @HostListener('MozMousePixelScroll', ['$event'])
@@ -50,26 +56,11 @@ export class ImageZoomContainer {
         this.parentImageContainer.onMouseScroll(event);
     }
 
-
-    private generateStyles() {
-        this.el.style.width = this.windowWidth + 'px';
-        this.el.style.height = this.windowHeight + 'px';
-        this.el.style.border = `${this.borderSize}px solid rgb(136, 136, 136)`;
-        this.el.style.left = this.left + 'px';
-        this.el.style.top = this.top + 'px';
-        this.el.style.backgroundImage = `url(${this.image})`;
-    }
-
-    public setBackgroundPostion(x: number, y: number) {
-        this.el.style.backgroundPosition = `${x}px ${y}px`;
-        this.positionX = x;
-        this.positionY = y;
-    }
-
-    public setZoomSize(width: number, height: number) {
-        this.el.style.backgroundSize = `${width}px ${height}px`;
-        this.imageWidth = width;
-        this.imageHeight = height;
+    public setLensSize(width: number, height: number) {
+        this.el.style.width = width + 'px';
+        this.el.style.height = height + 'px';
+        this.lensWidth = width;
+        this.lensHeight = height;
     }
 
     setWindowPosition(left: number, top: number) {
@@ -80,12 +71,9 @@ export class ImageZoomContainer {
     }
 
 
-    public setOptions(windowWidth: number, windowHeight: number, borderSize: number, image: string) {
-        this.windowWidth = windowWidth;
-        this.windowHeight = windowHeight;
+    public setOptions(borderSize: number) {
+        this.el.style.border = `${borderSize}px solid rgb(136, 136, 136)`;
         this.borderSize = borderSize;
-        this.image = image;
-        this.generateStyles();
     }
 
     public setVisibility(visible: boolean) {

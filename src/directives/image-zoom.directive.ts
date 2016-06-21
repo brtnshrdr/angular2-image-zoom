@@ -1,5 +1,6 @@
 import {Directive, Input, HostListener, ComponentResolver, ComponentFactory, ComponentRef, ViewContainerRef, OnInit, OnDestroy, OnChanges, SimpleChanges, AfterViewInit, ElementRef} from '@angular/core';
 import {ImageZoomContainer} from './image-zoom-container.component';
+import {ImageZoomLens} from './image-zoom-lens.component';
 @Directive({
     selector : '[imageZoom]'
 })
@@ -8,6 +9,7 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
     @Input() private allowZoom: boolean = true;
     @Input() private clickToZoom: boolean = false;
     @Input() private scrollZoom: boolean = true;
+    @Input() private windowPosition: number = 1;
     @Input() private lensStyle: string = 'WINDOW';
     @Input() private lensWidth: number = 300;
     @Input() private lensHeight: number = 300;
@@ -25,6 +27,7 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
 
     public img: HTMLImageElement;
     public imageZoomContainer: ImageZoomContainer;
+    public imageZoomLens: ImageZoomLens;
 
     public isZooming: boolean = false;
     public zoomLevel: number = 1;
@@ -52,6 +55,7 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
     private _previousCursor: string;
 
     private _imageZoomContainerRef: ComponentRef<ImageZoomContainer>;
+    private _imageZoomLensRef: ComponentRef<ImageZoomLens>;
 
     constructor(private _elementRef: ElementRef, private _componentResolver: ComponentResolver, private _viewContainerRef: ViewContainerRef) {
         if(this._elementRef.nativeElement.nodeName !== 'IMG') {
@@ -67,6 +71,13 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
                     this.imageZoomContainer = this._imageZoomContainerRef.instance;
                     this.imageZoomContainer.setParentImageContainer(this);
                     return this._imageZoomContainerRef;
+                });
+        this._componentResolver.resolveComponent(ImageZoomLens)
+                .then((factory: ComponentFactory<ImageZoomLens>) => {
+                    this._imageZoomLensRef = this._viewContainerRef.createComponent(factory, 0, this._viewContainerRef.injector);
+                    this.imageZoomLens = this._imageZoomLensRef.instance;
+                    this.imageZoomLens.setParentImageContainer(this);
+                    return this._imageZoomLensRef;
                 });
     }
 
@@ -87,15 +98,36 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
             this._imageLoaded = true;
             this.changeZoomLevel();
             this.setImageZoomContainer();
+            this.setImageZoomLens();
+            this.setImageZoomLensPosition();
+            this.setImageZoomLensSize();
         };
     }
 
     private setImageZoomContainer() {
-        this.imageZoomContainer.setOptions(this.lensWidth, this.lensHeight, this._elementPosX + this.img.width + 20, this._elementPosY, this.lensBorder, this._zoomImage.src);
+        this.imageZoomContainer.setOptions(this.lensWidth, this.lensHeight, this.lensBorder, this._zoomImage.src);
     }
 
     private setImageZoomContainerVisiblity(visible: boolean) {
         this.imageZoomContainer.setVisibility(visible);
+    }
+
+    private setImageZoomLens() {
+        this.imageZoomLens.setOptions(this.lensBorder);
+    }
+
+    private setImageZoomLensVisibility(visible: boolean) {
+        if(!visible || this.lensStyle.toUpperCase() === 'WINDOW') {
+            this.imageZoomLens.setVisibility(visible);
+        }
+    }
+
+    private setImageZoomLensPosition() {
+        this.imageZoomLens.setWindowPosition(this._currentX - (this.lensWidth / this._widthRatio / 2), this._currentY - (this.lensHeight / this._heightRatio / 2));
+    }
+
+    private setImageZoomLensSize() {
+        this.imageZoomLens.setLensSize(this.lensWidth / this._widthRatio, this.lensHeight / this._heightRatio);
     }
 
     private setImageBackgroundPosition() {
@@ -108,7 +140,63 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
         if(this.lensStyle.toUpperCase() === 'LENS') {
             this.imageZoomContainer.setWindowPosition(this._currentX - (this.lensWidth / 2) - this.lensBorder, this._currentY - (this.lensHeight / 2) - this.lensBorder); // Account for lens border shifting image down and to the right
         } else if(this.lensStyle.toUpperCase() === 'WINDOW') {
-            this.imageZoomContainer.setWindowPosition(this._elementPosX + this.img.width + 20, this._elementPosY);
+            let windowX: number = this._elementPosX + this.img.width;
+            let windowY: number = this._elementPosY;
+            switch (this.windowPosition) { // Calculate x position
+                case 1:
+                case 2:
+                case 3:
+                case 4:
+                case 16:
+                    break; // Default above
+                case 5:
+                case 15:
+                    windowX -= this.lensWidth;
+                    break;
+                case 6:
+                case 14:
+                    windowX -= ((this.lensWidth / 2) + (this.img.width / 2));
+                    break;
+                case 7:
+                case 13:
+                    windowX -= this.img.width;
+                    break;
+                case 8:
+                case 9:
+                case 10:
+                case 11:
+                case 12:
+                    windowX -= (this.img.width + this.lensWidth);
+                    break;
+            }
+            switch (this.windowPosition) { // Calculate Y position
+                case 1:
+                case 11:
+                    break; // Default above
+                case 2:
+                case 10:
+                    windowY += ((this.img.height / 2) - (this.lensHeight / 2));
+                    break;
+                case 3:
+                case 9:
+                    windowY += (this.img.height - this.lensHeight);
+                    break;
+                case 4:
+                case 5:
+                case 6:
+                case 7:
+                case 8:
+                    windowY += (this.img.height);
+                    break;
+                case 12:
+                case 13:
+                case 14:
+                case 15:
+                case 16:
+                    windowY -= (this.lensHeight);
+                    break;
+            }
+            this.imageZoomContainer.setWindowPosition(windowX, windowY);
         }
     }
 
@@ -131,30 +219,25 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
     }
 
     private calculateBoundaries(clientX: number, clientY: number) {
-        if(this.lensStyle.toUpperCase() === 'LENS') {
-            let xPos = clientX - this._elementOffsetX;
-            let rightBoundary: number = (this.img.width - ((this.lensWidth / 2) / this._widthRatio)) + (this.lensBorder * 2);
-            let leftBoundary: number = ((this.lensWidth / 2) / this._widthRatio);
-            if(xPos >= rightBoundary) {
-                this._currentX = rightBoundary + this._elementOffsetX;
-            } else if(xPos <= leftBoundary) {
-                this._currentX = leftBoundary + this._elementOffsetX;
-            } else {
-                this._currentX = clientX;
-            }
+        let xPos = clientX - this._elementOffsetX;
+        let rightBoundary: number = (this.img.width - ((this.lensWidth / 2) / this._widthRatio));
+        let leftBoundary: number = ((this.lensWidth / 2) / this._widthRatio);
+        if(xPos >= rightBoundary) {
+            this._currentX = rightBoundary + this._elementOffsetX;
+        } else if(xPos <= leftBoundary) {
+            this._currentX = leftBoundary + this._elementOffsetX;
+        } else {
+            this._currentX = clientX;
+        }
 
-            let yPos = clientY - this._elementOffsetY;
-            let topBoundary: number = ((this.lensHeight / 2) / this._heightRatio);
-            let bottomBoundary: number = ((this.img.height - ((this.lensHeight / 2) / this._heightRatio) + this.lensBorder));
-            if(yPos >= bottomBoundary) {
-                this._currentY = bottomBoundary + this._elementOffsetY;
-            } else if(yPos <= topBoundary) {
-                this._currentY = topBoundary + this._elementOffsetY;
-            } else {
-                this._currentY = clientY;
-            }
-        } else if(this.lensStyle.toUpperCase() === 'WINDOW') {
-            this._currentX = clientX; // TODO
+        let yPos = clientY - this._elementOffsetY;
+        let topBoundary: number = ((this.lensHeight / 2) / this._heightRatio);
+        let bottomBoundary: number = (this.img.height - ((this.lensHeight / 2) / this._heightRatio));
+        if(yPos >= bottomBoundary) {
+            this._currentY = bottomBoundary + this._elementOffsetY;
+        } else if(yPos <= topBoundary) {
+            this._currentY = topBoundary + this._elementOffsetY;
+        } else {
             this._currentY = clientY;
         }
     }
@@ -173,6 +256,7 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
 
                 this.calculateBoundaries(this._lastEvent.clientX, this._lastEvent.clientY);
                 this.setImageBackgroundPosition();
+                this.setImageZoomLensPosition();
                 this.setWindowPosition();
                 this._mouseMoveDebounce = 0;
             }, 10); // Wait 10ms to be more performant
@@ -181,29 +265,42 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
 
     @HostListener('mouseenter', ['$event'])
     public onMouseenter(event: MouseEvent) {
-        this.ngAfterViewInit();
-        if(this._imageLoaded && this.allowZoom) {
-            this._mouseEnterDebounce = setTimeout(() => {
-                this._mouseEnterDebounce = 0;
-                this.isZooming = true;
-                this._previousCursor = this.img.style.cursor;
-                this.img.style.cursor = 'pointer';
-                this.setImageZoomContainerVisiblity(true);
-            }, this.delay);
+        if(!this.isZooming) {
+            this.ngAfterViewInit();
+            if(this._imageLoaded && this.allowZoom) {
+                if(this._mouseEnterDebounce !== 0) {
+                    clearTimeout(this._mouseEnterDebounce);
+                }
+                this._mouseEnterDebounce = setTimeout(() => {
+                    this.isZooming = true;
+                    this._mouseEnterDebounce = 0;
+                    this._previousCursor = this.img.style.cursor;
+                    this.img.style.cursor = 'pointer';
+                    this.setImageZoomContainerVisiblity(true);
+                    this.setImageZoomLensVisibility(true);
+                }, this.delay);
+            }
         }
     }
 
     @HostListener('mouseleave', ['$event'])
     public onMouseleave(event: MouseEvent) {
-        if(this._mouseEnterDebounce !== 0) {
-            clearTimeout(this._mouseEnterDebounce);
-            return;
+        let x: number = event.clientX;
+        let y: number = event.clientY;
+        if(y <= this.img.y || y >= (this.img.y + this.img.height) || x <= this.img.x || x >= (this.img.x + this.img.width)) {
+            if(this._mouseEnterDebounce !== 0) {
+                clearTimeout(this._mouseEnterDebounce);
+            }
+            if(this.isZooming) {
+                this.img.style.cursor = this._previousCursor;
+                this.setImageZoomContainerVisiblity(false);
+                this.setImageZoomLensVisibility(false);
+                this.isZooming = false;
+            }
+        } else {
+            this.onMousemove(event); // "mouseleave" event was just the mouse focus going to the lens
         }
-        if(this.isZooming) {
-            this.isZooming = false;
-            this.img.style.cursor = this._previousCursor;
-            this.setImageZoomContainerVisiblity(false);
-        }
+
     }
 
     @HostListener('MozMousePixelScroll', ['$event'])
@@ -229,6 +326,8 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
             }
             this.calculateBoundaries(this._lastEvent.clientX, this._lastEvent.clientY);
             this.setWindowPosition();
+            this.setImageZoomLensSize();
+            this.setImageZoomLensPosition();
             return false;
         } else {
             return true;
