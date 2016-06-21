@@ -34,6 +34,7 @@ Name | Type | Default | Description |
 ---|---|---|--- |
 imageZoom | string | null | Link to larger [src] image
 allowZoom | boolean | true | Whether or not zooming is enabled
+clickToZoom | boolean | false | Force a user to click before zooming begins, click again to stop zooming
 scrollZoom | boolean | true | Allow mousewheel to change zoom level
 lensStyle | string | 'WINDOW' | Type of zoom ('LENS', 'WINDOW')
 lensWidth | number | 300 | Width of zoom lens

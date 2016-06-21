@@ -6,6 +6,7 @@ import {ImageZoomContainer} from './image-zoom-container.component';
 export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
     @Input() private imageZoom: string;
     @Input() private allowZoom: boolean = true;
+    @Input() private clickToZoom: boolean = false;
     @Input() private scrollZoom: boolean = true;
     @Input() private lensStyle: string = 'WINDOW';
     @Input() private lensWidth: number = 300;
@@ -118,6 +119,17 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
         this.setImageBackgroundPosition();
     }
 
+    private calculateOffsets() {
+        this._elementPosX = this.img.x;
+        this._elementPosY = this.img.y;
+        if(this.lensHeight > this.img.height) {
+            this.lensHeight = this.img.height;
+        }
+        this._elementOffsetX = this.img.offsetLeft;
+        this._elementOffsetY = this.img.offsetTop;
+        this.setImageZoomContainer();
+    }
+
     private calculateBoundaries(clientX: number, clientY: number) {
         if(this.lensStyle.toUpperCase() === 'LENS') {
             let xPos = clientX - this._elementOffsetX;
@@ -149,24 +161,27 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
 
     @HostListener('mousemove', ['$event'])
     public onMousemove(event: MouseEvent) {
-        this._lastEvent = event; // Make sure we end up at the right place, without calling too frequently
-        if(this._mouseMoveDebounce !== 0) {
-            return;
-        }
-        this._mouseMoveDebounce = setTimeout(() => {
-            if(!this.isZooming) {
-                this.onMouseenter(event);
+        if(this.allowZoom) {
+            this._lastEvent = event; // Make sure we end up at the right place, without calling too frequently
+            if(this._mouseMoveDebounce !== 0) {
+                return;
             }
+            this._mouseMoveDebounce = setTimeout(() => {
+                if(!this.isZooming) {
+                    this.onMouseenter(event);
+                }
 
-            this.calculateBoundaries(this._lastEvent.clientX, this._lastEvent.clientY);
-            this.setImageBackgroundPosition();
-            this.setWindowPosition();
-            this._mouseMoveDebounce = 0;
-        }, 10); // Wait 10ms to be more performant
+                this.calculateBoundaries(this._lastEvent.clientX, this._lastEvent.clientY);
+                this.setImageBackgroundPosition();
+                this.setWindowPosition();
+                this._mouseMoveDebounce = 0;
+            }, 10); // Wait 10ms to be more performant
+        }
     }
 
     @HostListener('mouseenter', ['$event'])
     public onMouseenter(event: MouseEvent) {
+        this.ngAfterViewInit();
         if(this._imageLoaded && this.allowZoom) {
             this._mouseEnterDebounce = setTimeout(() => {
                 this._mouseEnterDebounce = 0;
@@ -195,7 +210,7 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
     @HostListener('DOMMouseScroll', ['$event'])
     @HostListener('mousewheel', ['$event'])
     public onMouseScroll(event: any) { // MouseWheelEvent is throwing undefined error in SystemJS
-        if(this.scrollZoom) {
+        if(this.scrollZoom && this.allowZoom) {
             event.stopImmediatePropagation();
             event.stopPropagation();
             event.preventDefault();
@@ -220,6 +235,18 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
         }
     }
 
+    @HostListener('click', ['$event'])
+    public onClick(event: MouseEvent) {
+        if(this.clickToZoom) {
+            this.allowZoom = !this.allowZoom;
+            if(this.allowZoom) {
+                this.onMousemove(event);
+            } else {
+                this.onMouseleave(event);
+            }
+        }
+    }
+
     ngOnChanges(changeRecord: SimpleChanges) {
         for (let prop in changeRecord) {
             if(!changeRecord[prop].isFirstChange()) {
@@ -239,17 +266,13 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
     }
 
     ngAfterViewInit() {
-        this._elementPosX = this.img.x;
-        this._elementPosY = this.img.y;
-        if(this.lensHeight > this.img.height) {
-            this.lensHeight = this.img.height;
-        }
-        this._elementOffsetX = this.img.offsetLeft;
-        this._elementOffsetY = this.img.offsetTop;
-        this.setImageZoomContainer();
+        this.calculateOffsets();
     }
 
     ngOnInit() {
+        if(this.clickToZoom) {
+            this.allowZoom = false;
+        }
         this._zoomImage.src = this.imageZoom ? this.imageZoom : this.img.src;
     }
 
