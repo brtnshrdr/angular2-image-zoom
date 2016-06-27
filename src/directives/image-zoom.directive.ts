@@ -36,6 +36,8 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
     private _elementPosY: number;
     private _elementOffsetX: number;
     private _elementOffsetY: number;
+    private _containerOffsetX: number;
+    private _containerOffsetY: number;
 
     private _zoomImage: HTMLImageElement;
     private _imageLoaded: boolean = false;
@@ -123,7 +125,7 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
     }
 
     private setImageZoomLensPosition() {
-        this.imageZoomLens.setWindowPosition(this._currentX - (this.lensWidth / this._widthRatio / 2), this._currentY - (this.lensHeight / this._heightRatio / 2));
+        this.imageZoomLens.setWindowPosition(this._currentX - (this.lensWidth / this._widthRatio / 2) - this._containerOffsetX, this._currentY - (this.lensHeight / this._heightRatio / 2) - this._containerOffsetY);
     }
 
     private setImageZoomLensSize() {
@@ -131,14 +133,14 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
     }
 
     private setImageBackgroundPosition() {
-        let x: number = ((this._currentX - this._elementOffsetX) * this._widthRatio - this.lensWidth / 2) * -1;
-        let y: number = ((this._currentY - this._elementOffsetY) * this._heightRatio - this.lensHeight / 2) * -1;
+        let x: number = (((this._currentX - this._containerOffsetX) - this._elementOffsetX) * this._widthRatio - this.lensWidth / 2) * -1;
+        let y: number = (((this._currentY - this._containerOffsetY) - this._elementOffsetY) * this._heightRatio - this.lensHeight / 2) * -1;
         this.imageZoomContainer.setBackgroundPostion(x, y);
     }
 
     private setWindowPosition() {
         if(this.lensStyle.toUpperCase() === 'LENS') {
-            this.imageZoomContainer.setWindowPosition(this._currentX - (this.lensWidth / 2) - this.lensBorder, this._currentY - (this.lensHeight / 2) - this.lensBorder); // Account for lens border shifting image down and to the right
+            this.imageZoomContainer.setWindowPosition(this._currentX - (this.lensWidth / 2) - this.lensBorder - this._containerOffsetX, this._currentY - (this.lensHeight / 2) - this.lensBorder - this._containerOffsetY); // Account for lens border shifting image down and to the right
         } else if(this.lensStyle.toUpperCase() === 'WINDOW') {
             let windowX: number = this._elementPosX + this.img.width;
             let windowY: number = this._elementPosY;
@@ -196,7 +198,7 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
                     windowY -= (this.lensHeight);
                     break;
             }
-            this.imageZoomContainer.setWindowPosition(windowX, windowY);
+            this.imageZoomContainer.setWindowPosition(windowX - this._containerOffsetX, windowY - this._containerOffsetY);
         }
     }
 
@@ -213,6 +215,16 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
         if(this.lensHeight > this.img.height) {
             this.lensHeight = this.img.height;
         }
+        let parent: HTMLElement = (<HTMLElement>this.img.offsetParent);
+        let offsetX: number = 0;
+        let offsetY: number = 0;
+        while (parent.offsetParent !== undefined && parent.offsetParent !== null) {
+            offsetX += parent.offsetLeft;
+            offsetY += parent.offsetTop;
+            parent = (<HTMLElement>parent.offsetParent);
+        }
+        this._containerOffsetX = offsetX;
+        this._containerOffsetY = offsetY;
         this._elementOffsetX = this.img.offsetLeft;
         this._elementOffsetY = this.img.offsetTop;
         this.setImageZoomContainer();
@@ -220,8 +232,8 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
 
     private calculateBoundaries(clientX: number, clientY: number) {
         let xPos = clientX - this._elementOffsetX;
-        let rightBoundary: number = (this.img.width - ((this.lensWidth / 2) / this._widthRatio));
-        let leftBoundary: number = ((this.lensWidth / 2) / this._widthRatio);
+        let rightBoundary: number = (this.img.width - ((this.lensWidth / 2) / this._widthRatio)) + this._containerOffsetX;
+        let leftBoundary: number = ((this.lensWidth / 2) / this._widthRatio) + this._containerOffsetX;
         if(xPos >= rightBoundary) {
             this._currentX = rightBoundary + this._elementOffsetX;
         } else if(xPos <= leftBoundary) {
@@ -231,8 +243,8 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
         }
 
         let yPos = clientY - this._elementOffsetY;
-        let topBoundary: number = ((this.lensHeight / 2) / this._heightRatio);
-        let bottomBoundary: number = (this.img.height - ((this.lensHeight / 2) / this._heightRatio));
+        let topBoundary: number = ((this.lensHeight / 2) / this._heightRatio) + this._containerOffsetY;
+        let bottomBoundary: number = (this.img.height - ((this.lensHeight / 2) / this._heightRatio)) + this._containerOffsetY;
         if(yPos >= bottomBoundary) {
             this._currentY = bottomBoundary + this._elementOffsetY;
         } else if(yPos <= topBoundary) {
