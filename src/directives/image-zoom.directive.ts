@@ -1,10 +1,10 @@
-import {Directive, Input, HostListener, ComponentResolver, ComponentFactory, ComponentRef, ViewContainerRef, OnInit, OnDestroy, OnChanges, SimpleChanges, AfterViewInit, ElementRef} from '@angular/core';
+import {Directive, Input, HostListener, ComponentResolver, ComponentFactory, ComponentRef, ViewContainerRef, OnInit, OnDestroy, OnChanges, SimpleChanges, ElementRef} from '@angular/core';
 import {ImageZoomContainer} from './image-zoom-container.component';
 import {ImageZoomLens} from './image-zoom-lens.component';
 @Directive({
     selector : '[imageZoom]'
 })
-export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
+export class ImageZoom implements OnInit, OnDestroy, OnChanges {
     @Input() private imageZoom: string;
     @Input() private allowZoom: boolean = true;
     @Input() private clickToZoom: boolean = false;
@@ -39,8 +39,8 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
     private _containerOffsetX: number;
     private _containerOffsetY: number;
 
-    private _zoomImage: HTMLImageElement;
-    private _imageLoaded: boolean = false;
+    private _zoomedImage: HTMLImageElement;
+    private _zoomedImageLoaded: boolean = false;
     private _zoomedImageWidth: number;
     private _zoomedImageHeight: number;
     private _maxZoomLevel: number;
@@ -56,6 +56,9 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
     private _lastEvent: MouseEvent;
     private _previousCursor: string;
 
+    private _imageLoaded: boolean = false;
+    private _componentsCreated: boolean = false;
+
     private _imageZoomContainerRef: ComponentRef<ImageZoomContainer>;
     private _imageZoomLensRef: ComponentRef<ImageZoomLens>;
 
@@ -65,30 +68,37 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
             return;
         }
         this.img = this._elementRef.nativeElement;
-        this.imageChanged();
+        this.img.onload = () => {
+            this._imageLoaded = true;
+            if(this._componentsCreated) { // Possible race condition if the component resolver hasn't finished yet
+                this.imageChanged();
+            }
+        };
 
         this._componentResolver.resolveComponent(ImageZoomContainer)
-                .then((factory: ComponentFactory<ImageZoomContainer>) => {
-                    this._imageZoomContainerRef = this._viewContainerRef.createComponent(factory, 0, this._viewContainerRef.injector);
-                    this.imageZoomContainer = this._imageZoomContainerRef.instance;
-                    this.imageZoomContainer.setParentImageContainer(this);
-                    return this._imageZoomContainerRef;
-                });
-        this._componentResolver.resolveComponent(ImageZoomLens)
-                .then((factory: ComponentFactory<ImageZoomLens>) => {
-                    this._imageZoomLensRef = this._viewContainerRef.createComponent(factory, 0, this._viewContainerRef.injector);
-                    this.imageZoomLens = this._imageZoomLensRef.instance;
-                    this.imageZoomLens.setParentImageContainer(this);
-                    return this._imageZoomLensRef;
+                .then((imageZoomContainerFactory: ComponentFactory<ImageZoomContainer>) => {
+                    this._componentResolver.resolveComponent(ImageZoomLens)
+                            .then((imageZoomLensFactory: ComponentFactory<ImageZoomLens>) => {
+                                this._imageZoomContainerRef = this._viewContainerRef.createComponent(imageZoomContainerFactory, 0, this._viewContainerRef.injector);
+                                this.imageZoomContainer = this._imageZoomContainerRef.instance;
+                                this.imageZoomContainer.setParentImageContainer(this);
+                                this._imageZoomLensRef = this._viewContainerRef.createComponent(imageZoomLensFactory, 0, this._viewContainerRef.injector);
+                                this.imageZoomLens = this._imageZoomLensRef.instance;
+                                this.imageZoomLens.setParentImageContainer(this);
+                                this._componentsCreated = true;
+                                if(this._imageLoaded) {
+                                    this.imageChanged();
+                                }
+                            });
                 });
     }
 
     private imageChanged() {
-        this._imageLoaded = false;
-        this._zoomImage = new Image();
-        this._zoomImage.onload = () => {
-            this._zoomedImageWidth = this._zoomImage.width;
-            this._zoomedImageHeight = this._zoomImage.height;
+        this._zoomedImageLoaded = false;
+        this._zoomedImage = new Image();
+        this._zoomedImage.onload = () => {
+            this._zoomedImageWidth = this._zoomedImage.width;
+            this._zoomedImageHeight = this._zoomedImage.height;
             this.imageZoomContainer.setZoomSize(this._zoomedImageWidth / this.zoomLevel, this._zoomedImageHeight / this.zoomLevel);
             if(this._autoCalculateZoom) {
                 if(this._zoomedImageWidth > this._zoomedImageHeight) {
@@ -97,17 +107,19 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
                     this._maxZoomLevel = this._zoomedImageWidth / this.lensWidth;
                 }
             }
-            this._imageLoaded = true;
+            this._zoomedImageLoaded = true;
+            this.calculateOffsets();
             this.changeZoomLevel();
             this.setImageZoomContainer();
             this.setImageZoomLens();
             this.setImageZoomLensPosition();
             this.setImageZoomLensSize();
         };
+        this._zoomedImage.src = this.imageZoom ? this.imageZoom : this.img.src;
     }
 
     private setImageZoomContainer() {
-        this.imageZoomContainer.setOptions(this.lensWidth, this.lensHeight, this.lensBorder, this._zoomImage.src);
+        this.imageZoomContainer.setOptions(this.lensWidth, this.lensHeight, this.lensBorder, this._zoomedImage.src);
     }
 
     private setImageZoomContainerVisiblity(visible: boolean) {
@@ -254,9 +266,13 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
         }
     }
 
+    public allowZooming(): boolean {
+        return this.allowZoom && this._imageLoaded && this._zoomedImageLoaded;
+    }
+
     @HostListener('mousemove', ['$event'])
     public onMousemove(event: MouseEvent) {
-        if(this.allowZoom) {
+        if(this.allowZooming()) {
             this._lastEvent = event; // Make sure we end up at the right place, without calling too frequently
             if(this._mouseMoveDebounce !== 0) {
                 return;
@@ -278,8 +294,8 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
     @HostListener('mouseenter', ['$event'])
     public onMouseenter(event: MouseEvent) {
         if(!this.isZooming) {
-            this.ngAfterViewInit();
-            if(this._imageLoaded && this.allowZoom) {
+            if(this.allowZooming()) {
+                this.calculateOffsets();
                 if(this._mouseEnterDebounce !== 0) {
                     clearTimeout(this._mouseEnterDebounce);
                 }
@@ -319,7 +335,7 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
     @HostListener('DOMMouseScroll', ['$event'])
     @HostListener('mousewheel', ['$event'])
     public onMouseScroll(event: any) { // MouseWheelEvent is throwing undefined error in SystemJS
-        if(this.scrollZoom && this.allowZoom) {
+        if(this.scrollZoom && this.allowZooming()) {
             event.stopImmediatePropagation();
             event.stopPropagation();
             event.preventDefault();
@@ -350,7 +366,7 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
     public onClick(event: MouseEvent) {
         if(this.clickToZoom) {
             this.allowZoom = !this.allowZoom;
-            if(this.allowZoom) {
+            if(this.allowZooming()) {
                 this.onMousemove(event);
             } else {
                 this.onMouseleave(event);
@@ -363,8 +379,6 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
             if(!changeRecord[prop].isFirstChange()) {
                 if(prop === 'imageZoom') { // Image changed
                     this.imageChanged();
-                    this.ngAfterViewInit();
-                    this._zoomImage.src = changeRecord[prop].currentValue ? changeRecord[prop].currentValue : this.img.src;
                 } else if(prop === 'lensWidth' || prop === 'lensHeight') {
                     if(this.lensHeight > this.img.height) {
                         this.lensHeight = this.img.height;
@@ -376,19 +390,15 @@ export class ImageZoom implements OnInit, OnDestroy, AfterViewInit, OnChanges {
         }
     }
 
-    ngAfterViewInit() {
-        this.calculateOffsets();
-    }
-
     ngOnInit() {
         if(this.clickToZoom) {
             this.allowZoom = false;
         }
-        this._zoomImage.src = this.imageZoom ? this.imageZoom : this.img.src;
     }
 
     ngOnDestroy() {
         this._imageZoomContainerRef.destroy();
+        this._imageZoomLensRef.destroy();
     }
 
 }
