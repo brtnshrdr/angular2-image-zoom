@@ -99,7 +99,12 @@ export class ImageZoom implements OnInit, OnDestroy, OnChanges {
         this._zoomedImage.onload = () => {
             this._zoomedImageWidth = this._zoomedImage.width;
             this._zoomedImageHeight = this._zoomedImage.height;
-            this.imageZoomContainer.setZoomSize(this._zoomedImageWidth / this.zoomLevel, this._zoomedImageHeight / this.zoomLevel);
+            this._zoomedImageLoaded = true;
+            this.calculateOffsets();
+            this.setImageZoomContainer();
+            this.setImageZoomLens();
+            this.setImageZoomLensPosition();
+            this.setImageZoomLensSize();
             if(this._autoCalculateZoom) {
                 if(this._zoomedImageWidth > this._zoomedImageHeight) {
                     this._maxZoomLevel = this._zoomedImageHeight / this.lensHeight;
@@ -107,13 +112,8 @@ export class ImageZoom implements OnInit, OnDestroy, OnChanges {
                     this._maxZoomLevel = this._zoomedImageWidth / this.lensWidth;
                 }
             }
-            this._zoomedImageLoaded = true;
-            this.calculateOffsets();
+            this.zoomLevel = (this._maxZoomLevel / 1.5);
             this.changeZoomLevel();
-            this.setImageZoomContainer();
-            this.setImageZoomLens();
-            this.setImageZoomLensPosition();
-            this.setImageZoomLensSize();
         };
         this._zoomedImage.src = this.imageZoom ? this.imageZoom : this.img.src;
     }
@@ -230,7 +230,7 @@ export class ImageZoom implements OnInit, OnDestroy, OnChanges {
         let parent: HTMLElement = (<HTMLElement>this.img.offsetParent);
         let offsetX: number = 0;
         let offsetY: number = 0;
-        while (parent.offsetParent !== undefined && parent.offsetParent !== null) {
+        while (parent !== undefined && parent !== null && parent.offsetParent !== undefined && parent.offsetParent !== null) {
             offsetX += parent.offsetLeft;
             offsetY += parent.offsetTop;
             parent = (<HTMLElement>parent.offsetParent);
