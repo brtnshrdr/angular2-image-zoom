@@ -55,8 +55,8 @@ This library is a work in progress and any issues/pull-requests are welcomed!
 
 ## TODO
 1. Create unit and E2E tests
-2. Allow window to be placed anywhere
-3. Show viewing lens over image to show zoom area
+2. ~~Allow window to be placed anywhere~~
+3. ~~Show viewing lens over image to show zoom area~~
 4. ~~Allow mouse scrolling to change zoom level~~
 5. ~~Allow inner zoom lens~~
 6. Lots more....
