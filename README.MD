@@ -1,4 +1,5 @@
 # angular2-image-zoom
+Angular 2 RC.6 Compatible
 
 ## Installation
 
@@ -9,18 +10,17 @@ $ npm install angular2-image-zoom --save
 ```
 
 ## Examples
-First, import the ImageZoom directive
+First, import the ImageZoom Module
 
 ```typescript
-import {ImageZoom} from 'angular2-image-zoom';
+import {ImageZoomModule} from 'angular2-image-zoom';
 ```
 
-Then, add ImageZoom to your components directives array
+Then, add ImageZoom to your modules import array
 
 ```typescript
-@Component({
-    selector : 'example',
-    directives : [ImageZoom],
+@NgModule({
+    imports : [CommonModule, ImageZoomModule, ...],
 })
 ```
 Then just add the [imageZoom] tag to your img element

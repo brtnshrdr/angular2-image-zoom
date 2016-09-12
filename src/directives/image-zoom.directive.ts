@@ -1,6 +1,7 @@
-import {Directive, Input, HostListener, ComponentResolver, ComponentFactory, ComponentRef, ViewContainerRef, OnInit, OnDestroy, OnChanges, SimpleChanges, ElementRef} from '@angular/core';
+import {Directive, Input, HostListener, ComponentFactoryResolver, ComponentRef, ViewContainerRef, OnInit, OnDestroy, OnChanges, SimpleChanges, ElementRef, ViewChild} from '@angular/core';
 import {ImageZoomContainer} from './image-zoom-container.component';
 import {ImageZoomLens} from './image-zoom-lens.component';
+
 @Directive({
     selector : '[imageZoom]'
 })
@@ -62,7 +63,7 @@ export class ImageZoom implements OnInit, OnDestroy, OnChanges {
     private _imageZoomContainerRef: ComponentRef<ImageZoomContainer>;
     private _imageZoomLensRef: ComponentRef<ImageZoomLens>;
 
-    constructor(private _elementRef: ElementRef, private _componentResolver: ComponentResolver, private _viewContainerRef: ViewContainerRef) {
+    constructor(private _elementRef: ElementRef, private _componentFactoryResolver: ComponentFactoryResolver, private _viewContainerRef: ViewContainerRef) {
         if(this._elementRef.nativeElement.nodeName !== 'IMG') {
             console.error('ImageZoom not placed on image element', this._elementRef.nativeElement);
             return;
@@ -75,22 +76,21 @@ export class ImageZoom implements OnInit, OnDestroy, OnChanges {
             }
         };
 
-        this._componentResolver.resolveComponent(ImageZoomContainer)
-                .then((imageZoomContainerFactory: ComponentFactory<ImageZoomContainer>) => {
-                    this._componentResolver.resolveComponent(ImageZoomLens)
-                            .then((imageZoomLensFactory: ComponentFactory<ImageZoomLens>) => {
-                                this._imageZoomContainerRef = this._viewContainerRef.createComponent(imageZoomContainerFactory, 0, this._viewContainerRef.injector);
-                                this.imageZoomContainer = this._imageZoomContainerRef.instance;
-                                this.imageZoomContainer.setParentImageContainer(this);
-                                this._imageZoomLensRef = this._viewContainerRef.createComponent(imageZoomLensFactory, 0, this._viewContainerRef.injector);
-                                this.imageZoomLens = this._imageZoomLensRef.instance;
-                                this.imageZoomLens.setParentImageContainer(this);
-                                this._componentsCreated = true;
-                                if(this._imageLoaded) {
-                                    this.imageChanged();
-                                }
-                            });
-                });
+        let imageZoomContainerFactory = this._componentFactoryResolver.resolveComponentFactory(ImageZoomContainer);
+        let imageZoomLensFactory = this._componentFactoryResolver.resolveComponentFactory(ImageZoomLens);
+
+        this._imageZoomContainerRef = this._viewContainerRef.createComponent(imageZoomContainerFactory);
+        this.imageZoomContainer = this._imageZoomContainerRef.instance;
+        this.imageZoomContainer.setParentImageContainer(this);
+
+        this._imageZoomLensRef = this._viewContainerRef.createComponent(imageZoomLensFactory);
+        this.imageZoomLens = this._imageZoomLensRef.instance;
+        this.imageZoomLens.setParentImageContainer(this);
+
+        this._componentsCreated = true;
+        if(this._imageLoaded) {
+            this.imageChanged();
+        }
     }
 
     private imageChanged() {
@@ -99,6 +99,10 @@ export class ImageZoom implements OnInit, OnDestroy, OnChanges {
         this._zoomedImage.onload = () => {
             this._zoomedImageWidth = this._zoomedImage.width;
             this._zoomedImageHeight = this._zoomedImage.height;
+            // if(this._zoomedImageWidth < this.img.width) {
+            //     this.allowZoom = false;
+            //     return;
+            // }
             this._zoomedImageLoaded = true;
             this.calculateOffsets();
             this.setImageZoomContainer();
@@ -277,7 +281,7 @@ export class ImageZoom implements OnInit, OnDestroy, OnChanges {
             if(this._mouseMoveDebounce !== 0) {
                 return;
             }
-            this._mouseMoveDebounce = setTimeout(() => {
+            this._mouseMoveDebounce = window.setTimeout(() => {
                 if(!this.isZooming) {
                     this.onMouseenter(event);
                 }
@@ -299,7 +303,7 @@ export class ImageZoom implements OnInit, OnDestroy, OnChanges {
                 if(this._mouseEnterDebounce !== 0) {
                     clearTimeout(this._mouseEnterDebounce);
                 }
-                this._mouseEnterDebounce = setTimeout(() => {
+                this._mouseEnterDebounce = window.setTimeout(() => {
                     this.isZooming = true;
                     this._mouseEnterDebounce = 0;
                     this._previousCursor = this.img.style.cursor;
@@ -402,26 +406,3 @@ export class ImageZoom implements OnInit, OnDestroy, OnChanges {
     }
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
