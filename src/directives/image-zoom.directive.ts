@@ -322,6 +322,8 @@ export class ImageZoom implements OnInit, OnDestroy, OnChanges {
         if(y <= this.img.y || y >= (this.img.y + this.img.height) || x <= this.img.x || x >= (this.img.x + this.img.width)) {
             if(this._mouseEnterDebounce !== 0) {
                 clearTimeout(this._mouseEnterDebounce);
+            }
+            if(this._mouseMoveDebounce !== 0) {
                 clearTimeout(this._mouseMoveDebounce);
             }
             if(this.isZooming) {
