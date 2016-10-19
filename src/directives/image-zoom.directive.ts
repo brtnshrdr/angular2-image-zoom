@@ -99,10 +99,10 @@ export class ImageZoom implements OnInit, OnDestroy, OnChanges {
         this._zoomedImage.onload = () => {
             this._zoomedImageWidth = this._zoomedImage.width;
             this._zoomedImageHeight = this._zoomedImage.height;
-            // if(this._zoomedImageWidth < this.img.width) {
-            //     this.allowZoom = false;
-            //     return;
-            // }
+            if(this._zoomedImageWidth < this.img.width) {
+                this.allowZoom = false;
+                return;
+            }
             this._zoomedImageLoaded = true;
             this.calculateOffsets();
             this.setImageZoomContainer();
@@ -322,6 +322,7 @@ export class ImageZoom implements OnInit, OnDestroy, OnChanges {
         if(y <= this.img.y || y >= (this.img.y + this.img.height) || x <= this.img.x || x >= (this.img.x + this.img.width)) {
             if(this._mouseEnterDebounce !== 0) {
                 clearTimeout(this._mouseEnterDebounce);
+                clearTimeout(this._mouseMoveDebounce);
             }
             if(this.isZooming) {
                 this.img.style.cursor = this._previousCursor;
