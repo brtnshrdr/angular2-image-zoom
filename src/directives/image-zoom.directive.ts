@@ -282,7 +282,7 @@ export class ImageZoom implements OnInit, OnDestroy, OnChanges {
                 return;
             }
             this._mouseMoveDebounce = window.setTimeout(() => {
-                if(!this.isZooming) {
+                if(!this.isZooming && this._mouseEnterDebounce === 0) {
                     this.onMouseenter(event);
                 }
 
@@ -290,7 +290,7 @@ export class ImageZoom implements OnInit, OnDestroy, OnChanges {
                 this.setImageBackgroundPosition();
                 this.setImageZoomLensPosition();
                 this.setWindowPosition();
-                this._mouseMoveDebounce = 0;
+                clearTimeout(this._mouseMoveDebounce);
             }, 10); // Wait 10ms to be more performant
         }
     }
@@ -305,7 +305,7 @@ export class ImageZoom implements OnInit, OnDestroy, OnChanges {
                 }
                 this._mouseEnterDebounce = window.setTimeout(() => {
                     this.isZooming = true;
-                    this._mouseEnterDebounce = 0;
+                    clearTimeout(this._mouseEnterDebounce);
                     this._previousCursor = this.img.style.cursor;
                     this.img.style.cursor = 'pointer';
                     this.setImageZoomContainerVisiblity(true);
@@ -322,9 +322,6 @@ export class ImageZoom implements OnInit, OnDestroy, OnChanges {
         if(y <= this.img.y || y >= (this.img.y + this.img.height) || x <= this.img.x || x >= (this.img.x + this.img.width)) {
             if(this._mouseEnterDebounce !== 0) {
                 clearTimeout(this._mouseEnterDebounce);
-            }
-            if(this._mouseMoveDebounce !== 0) {
-                clearTimeout(this._mouseMoveDebounce);
             }
             if(this.isZooming) {
                 this.img.style.cursor = this._previousCursor;
