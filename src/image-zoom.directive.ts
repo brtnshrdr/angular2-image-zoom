@@ -6,17 +6,18 @@ import {ImageZoomLens} from './image-zoom-lens.component';
     selector : '[imageZoom]'
 })
 export class ImageZoom implements OnInit, OnDestroy, OnChanges {
-    @Input() private imageZoom: string;
-    @Input() private allowZoom: boolean = true;
-    @Input() private clickToZoom: boolean = false;
-    @Input() private scrollZoom: boolean = true;
-    @Input() private windowPosition: number = 1;
-    @Input() private lensStyle: string = 'WINDOW';
-    @Input() private lensWidth: number = 300;
-    @Input() private lensHeight: number = 300;
-    @Input() private lensBorder: number = 2;
-    @Input() private delay: number = 100;
-    @Input() private minZoomLevel: number = .2;
+    @Input() imageZoom: string;
+    @Input() allowZoom: boolean = true;
+    @Input() clickToZoom: boolean = false;
+    @Input() scrollZoom: boolean = true;
+    @Input() windowPosition: number = 1;
+    @Input() lensStyle: string = 'WINDOW';
+    @Input() lensWidth: number = 300;
+    @Input() lensHeight: number = 300;
+    @Input() lensBorder: number = 2;
+    @Input() delay: number = 100;
+    @Input() minZoomLevel: number = .2;
+    @Input() zoomLevel: number = 1;
 
     @Input()
     private set maxZoomLevel(maxZoomLevel: number) {
@@ -31,7 +32,6 @@ export class ImageZoom implements OnInit, OnDestroy, OnChanges {
     public imageZoomLens: ImageZoomLens;
 
     public isZooming: boolean = false;
-    public zoomLevel: number = 1;
 
     private _elementPosX: number;
     private _elementPosY: number;
@@ -388,6 +388,8 @@ export class ImageZoom implements OnInit, OnDestroy, OnChanges {
                     }
                     this.setImageZoomContainer();
                     this.setImageBackgroundPosition();
+                } else if(prop === 'zoomLevel') {
+                    this.changeZoomLevel();
                 }
             }
         }
