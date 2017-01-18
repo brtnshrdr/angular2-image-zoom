@@ -1,18 +1,21 @@
 {
   "compilerOptions": {
-    "target": "ES5",
+    "noImplicitAny": true,
     "module": "commonjs",
-    "moduleResolution": "node",
-    "sourceMap": true,
+    "target": "ES5",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "removeComments": false,
-    "noImplicitAny": true,
+    "sourceMap": true,
     "declaration": true
   },
+  "angularCompilerOptions": {
+    "genDir": "compiled"
+  },
+  "typeRoots": [
+    "node_modules/@types"
+  ],
   "files": [
-    "typings/browser/index.d.ts",
-    "angular2-image-zoom.ts"
+    "index.ts"
   ],
   "exclude": [
     "node_modules"

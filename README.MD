@@ -1,5 +1,5 @@
 # angular2-image-zoom
-Angular 2 RC.6 Compatible
+Angular 2.x.x Compatible
 
 ## Installation
 

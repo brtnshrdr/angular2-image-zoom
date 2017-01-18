@@ -2,11 +2,11 @@
 node_modules/*
 npm-debug.log
 
-# DO NOT IGNORE TYPESCRIPT FILES FOR NPM
+# Angular
+/compiled
+
+# DO NOT IGNORE COMPILED FILES FOR NPM
 # TypeScript
-# *.js
-# *.map
-# *.d.ts
 *.ts
 !*.d.ts
 
