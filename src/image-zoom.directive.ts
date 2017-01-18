@@ -285,12 +285,11 @@ export class ImageZoom implements OnInit, OnDestroy, OnChanges {
                 if(!this.isZooming && this._mouseEnterDebounce === 0) {
                     this.onMouseenter(event);
                 }
-
                 this.calculateBoundaries(this._lastEvent.clientX, this._lastEvent.clientY);
                 this.setImageBackgroundPosition();
                 this.setImageZoomLensPosition();
                 this.setWindowPosition();
-                clearTimeout(this._mouseMoveDebounce);
+                this._mouseMoveDebounce = 0;
             }, 10); // Wait 10ms to be more performant
         }
     }
