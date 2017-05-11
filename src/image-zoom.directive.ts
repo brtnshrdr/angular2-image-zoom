@@ -226,8 +226,8 @@ export class ImageZoom implements OnInit, OnDestroy, OnChanges {
     }
 
     private calculateOffsets() {
-        this._elementPosX = this.img.x;
-        this._elementPosY = this.img.y;
+        this._elementPosX = this.img.getBoundingClientRect().left;
+        this._elementPosY = this.img.getBoundingClientRect().top;
         if(this.lensHeight > this.img.height) {
             this.lensHeight = this.img.height;
         }
@@ -318,7 +318,7 @@ export class ImageZoom implements OnInit, OnDestroy, OnChanges {
     public onMouseleave(event: MouseEvent) {
         let x: number = event.clientX;
         let y: number = event.clientY;
-        if(y <= this.img.y || y >= (this.img.y + this.img.height) || x <= this.img.x || x >= (this.img.x + this.img.width)) {
+        if(y <= this.img.getBoundingClientRect().top || y >= (this.img.getBoundingClientRect().top + this.img.height) || x <= this.img.getBoundingClientRect().left || x >= (this.img.getBoundingClientRect().left + this.img.width)) {
             if(this._mouseEnterDebounce !== 0) {
                 clearTimeout(this._mouseEnterDebounce);
             }
