@@ -31,7 +31,7 @@
   "bugs": {
     "url": "git@github.com:brtnshrdr/angular2-image-zoom.git/issues"
   },
-  "main": "./dist/index.js",
+  "main": "./index.js",
   "devDependencies": {
     "@angular/core": "^4.4.3",
     "@angular/common": "^4.4.3",
