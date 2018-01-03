@@ -337,7 +337,6 @@ export class ImageZoom implements OnInit, OnDestroy, OnChanges {
     @HostListener('MozMousePixelScroll', ['$event'])
     @HostListener('DOMMouseScroll', ['$event'])
     @HostListener('mousewheel', ['$event'])
-    @HostListener('window:scroll', ['$event'])
     public onMouseScroll(event: any) { // MouseWheelEvent is throwing undefined error in SystemJS
 
         if(this.scrollZoom && this.allowZooming()) {
@@ -345,7 +344,9 @@ export class ImageZoom implements OnInit, OnDestroy, OnChanges {
             event.stopPropagation();
             event.preventDefault();
 
-            var pos = event.wheelDeltaY | event.wheelDelta | event.deltaY | event.detail * -1;
+            var pos = ((event.wheelDeltaY | event.detail * -1) != 0) ?
+            (event.wheelDeltaY | event.detail * -1) :
+            (event.deltaY | event.wheelDelta);
 
             if(pos > 0) { // Scroll up
                 if(this.zoomLevel > (this.minZoomLevel + this.zoomLevelIncrement)) {

@@ -297,7 +297,9 @@ var ImageZoom = (function () {
             event.stopImmediatePropagation();
             event.stopPropagation();
             event.preventDefault();
-            var pos = event.wheelDeltaY | event.wheelDelta | event.deltaY | event.detail * -1;
+            var pos = ((event.wheelDeltaY | event.detail * -1) != 0) ?
+                (event.wheelDeltaY | event.detail * -1) :
+                (event.deltaY | event.wheelDelta);
             if (pos > 0) {
                 if (this.zoomLevel > (this.minZoomLevel + this.zoomLevelIncrement)) {
                     this.zoomLevel -= this.zoomLevelIncrement;
@@ -390,7 +392,7 @@ ImageZoom.propDecorators = {
     'onMousemove': [{ type: core_1.HostListener, args: ['mousemove', ['$event'],] },],
     'onMouseenter': [{ type: core_1.HostListener, args: ['mouseenter', ['$event'],] },],
     'onMouseleave': [{ type: core_1.HostListener, args: ['mouseleave', ['$event'],] },],
-    'onMouseScroll': [{ type: core_1.HostListener, args: ['MozMousePixelScroll', ['$event'],] }, { type: core_1.HostListener, args: ['DOMMouseScroll', ['$event'],] }, { type: core_1.HostListener, args: ['mousewheel', ['$event'],] }, { type: core_1.HostListener, args: ['window:scroll', ['$event'],] },],
+    'onMouseScroll': [{ type: core_1.HostListener, args: ['MozMousePixelScroll', ['$event'],] }, { type: core_1.HostListener, args: ['DOMMouseScroll', ['$event'],] }, { type: core_1.HostListener, args: ['mousewheel', ['$event'],] },],
     'onClick': [{ type: core_1.HostListener, args: ['click', ['$event'],] },],
 };
 exports.ImageZoom = ImageZoom;
