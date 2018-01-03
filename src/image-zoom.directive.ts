@@ -345,6 +345,12 @@ export class ImageZoom implements OnInit, OnDestroy, OnChanges {
             event.preventDefault();
 
             let pos: number = event.wheelDeltaY | event.detail * -1;
+
+            console.log('event :', event);
+            console.log('pos :', pos);
+            console.log('wheel delta Y:', event.wheelDeltaY);
+            console.log('detail :', event.detail);
+
             if(pos > 0) { // Scroll up
                 if(this.zoomLevel > (this.minZoomLevel + this.zoomLevelIncrement)) {
                     this.zoomLevel -= this.zoomLevelIncrement;
