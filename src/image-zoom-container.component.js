@@ -70,7 +70,7 @@ ImageZoomContainer.ctorParameters = function () { return [
 ImageZoomContainer.propDecorators = {
     'onMousemove': [{ type: core_1.HostListener, args: ['mousemove', ['$event'],] },],
     'onMouseleave': [{ type: core_1.HostListener, args: ['mouseleave', ['$event'],] },],
-    'onMouseScroll': [{ type: core_1.HostListener, args: ['MozMousePixelScroll', ['$event'],] }, { type: core_1.HostListener, args: ['DOMMouseScroll', ['$event'],] }, { type: core_1.HostListener, args: ['mousewheel', ['$event'],] }, { type: core_1.HostListener, args: ['wheel', ['$event'],] },],
+    'onMouseScroll': [{ type: core_1.HostListener, args: ['MozMousePixelScroll', ['$event'],] }, { type: core_1.HostListener, args: ['DOMMouseScroll', ['$event'],] }, { type: core_1.HostListener, args: ['mousewheel', ['$event'],] }, { type: core_1.HostListener, args: ['window:scroll', ['$event'],] },],
 };
 exports.ImageZoomContainer = ImageZoomContainer;
 //# sourceMappingURL=image-zoom-container.component.js.map
