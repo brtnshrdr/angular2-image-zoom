@@ -339,17 +339,17 @@ export class ImageZoom implements OnInit, OnDestroy, OnChanges {
     @HostListener('mousewheel', ['$event'])
     @HostListener('window:scroll', ['$event'])
     public onMouseScroll(event: any) { // MouseWheelEvent is throwing undefined error in SystemJS
+
+        console.log('event :', event);
+        console.log('wheel delta Y:', event.wheelDeltaY);
+        console.log('detail :', event.detail);
+
         if(this.scrollZoom && this.allowZooming()) {
             event.stopImmediatePropagation();
             event.stopPropagation();
             event.preventDefault();
 
             let pos: number = event.wheelDeltaY | event.detail * -1;
-
-            console.log('event :', event);
-            console.log('pos :', pos);
-            console.log('wheel delta Y:', event.wheelDeltaY);
-            console.log('detail :', event.detail);
 
             if(pos > 0) { // Scroll up
                 if(this.zoomLevel > (this.minZoomLevel + this.zoomLevelIncrement)) {
