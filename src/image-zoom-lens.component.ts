@@ -52,7 +52,7 @@ export class ImageZoomLens {
     @HostListener('MozMousePixelScroll', ['$event'])
     @HostListener('DOMMouseScroll', ['$event'])
     @HostListener('mousewheel', ['$event'])
-    @HostListener('onmousewheel', ['$event'])
+    @HostListener('window:scroll', ['$event'])
     public onMouseScroll(event: any) { // MouseWheelEvent is throwing undefined error in SystemJS
         this.parentImageContainer.onMouseScroll(event);
     }
