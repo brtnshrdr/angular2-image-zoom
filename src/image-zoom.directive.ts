@@ -337,7 +337,7 @@ export class ImageZoom implements OnInit, OnDestroy, OnChanges {
     @HostListener('MozMousePixelScroll', ['$event'])
     @HostListener('DOMMouseScroll', ['$event'])
     @HostListener('mousewheel', ['$event'])
-    @HostListener('wheel', ['$event'])
+    @HostListener('scroll', ['$event'])
     public onMouseScroll(event: any) { // MouseWheelEvent is throwing undefined error in SystemJS
         if(this.scrollZoom && this.allowZooming()) {
             event.stopImmediatePropagation();
