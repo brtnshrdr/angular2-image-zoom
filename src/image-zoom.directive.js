@@ -297,7 +297,7 @@ var ImageZoom = (function () {
             event.stopImmediatePropagation();
             event.stopPropagation();
             event.preventDefault();
-            var pos = event.wheelDeltaY | event.deltaY | event.detail * -1;
+            var pos = event.wheelDeltaY | event.wheelDelta | event.deltaY | event.detail * -1;
             if (pos > 0) {
                 if (this.zoomLevel > (this.minZoomLevel + this.zoomLevelIncrement)) {
                     this.zoomLevel -= this.zoomLevelIncrement;
