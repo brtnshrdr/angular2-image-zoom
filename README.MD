@@ -42,6 +42,7 @@ lensWidth | number | 300 | Width of zoom lens
 lensHeight | number | 300 | Height of zoom lens
 lensBorder | number | 2 | Size of lens border (in pixels)
 delay | number | 100 | Delay before zoom lens appears (in milliseconds)
+zoomLevel | number | auto-calculated | Initial zoom level (smaller number indicates larger zoom)
 minZoomLevel | number | .2 | TODO
 maxZoomLevel | number | auto-calculated | TODO
 zoomLevelIncrement | number | .1 | Size of each change in zoom level while scrolling
